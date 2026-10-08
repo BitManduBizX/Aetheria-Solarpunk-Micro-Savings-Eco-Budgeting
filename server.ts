@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -11,9 +12,20 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
+  const getResolvedApiKey = () => {
+    const rawKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.VITE_GEMINI_API_KEY ||
+      '';
+    if (!rawKey || rawKey === 'MY_GEMINI_API_KEY') {
+      return '';
+    }
+    return rawKey;
+  };
+
   const getAiClient = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    const apiKey = getResolvedApiKey();
+    if (!apiKey) {
       return null;
     }
     return new GoogleGenAI({
@@ -28,9 +40,7 @@ async function startServer() {
 
   // Health & Environment Check endpoint
   app.get('/api/health', (_req, res) => {
-    const hasServerKey = Boolean(
-      process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY'
-    );
+    const hasServerKey = Boolean(getResolvedApiKey());
     res.json({
       status: 'ok',
       aiConfigured: hasServerKey,
@@ -151,8 +161,13 @@ ${JSON.stringify(context || {}, null, 2)}`;
     }
   });
 
-  if (process.env.NODE_ENV === 'production') {
-    const distPath = path.resolve(__dirname, 'dist');
+  const distPath = path.resolve(__dirname, 'dist');
+  const hasBuiltDist = fs.existsSync(path.join(distPath, 'index.html'));
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    (process.env.NODE_ENV !== 'development' && hasBuiltDist);
+
+  if (isProduction && hasBuiltDist) {
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
