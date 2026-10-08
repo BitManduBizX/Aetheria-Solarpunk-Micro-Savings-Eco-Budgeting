@@ -1,0 +1,6 @@
+{
+  "name": "Aetheria — Solarpunk Micro-Savings & Eco-Budgeting",
+  "description": "A gamified micro-savings, impulse cooldown vault, subscription boss battle, and carbon-budgeting web application set in an interactive 3D Solarpunk ecosystem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
